@@ -35,7 +35,6 @@ public class DynmapManager {
             DynmapAPI api = (DynmapAPI) dynmapPlugin;
             this.markerApi = api.getMarkerAPI();
 
-            // Cria ou obtém o "conjunto" de marcadores onde os claims serão armazenados
             this.markerSet = markerApi.getMarkerSet(MARKER_SET_ID);
             if (this.markerSet == null) {
                 this.markerSet = markerApi.createMarkerSet(MARKER_SET_ID, MARKER_SET_LABEL, null, false);
@@ -45,30 +44,33 @@ public class DynmapManager {
         }
     }
 
-    /**
-     * A função central que cria ou atualiza um marcador de claim no Dynmap.
-     * @param claim O objeto Claim do BlockyClaim.
-     */
     public void createOrUpdateClaimMarker(Claim claim) {
         if (markerSet == null || claim == null) return;
 
         String markerId = generateMarkerId(claim);
         String worldName = claim.getWorldName();
 
-        // Encontra o marcador existente ou cria um novo
-        AreaMarker marker = markerSet.findAreaMarker(markerId);
-        if (marker == null) {
-            double[] xCorners = { claim.getMinX(), claim.getMaxX() + 1 };
-            double[] zCorners = { claim.getMinZ(), claim.getMaxZ() + 1 };
-            marker = markerSet.createAreaMarker(markerId, "", false, worldName, xCorners, zCorners, false);
+        // A MUDANÇA CRÍTICA ESTÁ AQUI
+        // Em vez de tentar atualizar, nós SEMPRE deletamos o marcador antigo antes de criar o novo.
+        // Isso força o Dynmap a notificar a interface web da mudança, resolvendo o problema de renderização.
+        AreaMarker existingMarker = markerSet.findAreaMarker(markerId);
+        if (existingMarker != null) {
+            existingMarker.deleteMarker();
         }
+
+        // Define as coordenadas do terreno
+        double[] xCorners = { claim.getMinX(), claim.getMaxX() + 1 };
+        double[] zCorners = { claim.getMinZ(), claim.getMaxZ() + 1 };
+        
+        // Cria o novo marcador
+        AreaMarker marker = markerSet.createAreaMarker(markerId, "", false, worldName, xCorners, zCorners, false);
 
         if (marker == null) {
             System.out.println("[BlockyDynmap] Erro: Nao foi possivel criar o marcador para o claim: " + claim.getClaimName());
             return;
         }
 
-        // --- Lógica de Cor e Label ---
+        // --- Lógica de Cor e Label (continua a mesma) ---
         String ownerName = claim.getOwnerName();
         Faction ownerFaction = plugin.getBlockyFactions().getFactionManager().getPlayerFaction(ownerName);
 
@@ -76,24 +78,19 @@ public class DynmapManager {
         String label;
 
         if (ownerFaction != null) {
-            // Requisito 3, 5, 7: O jogador tem uma facção, usa a cor da facção
             color = ownerFaction.getColorHex();
-            // Requisito 8: Label com nome da facção e do jogador
             label = "§f" + claim.getClaimName() + " §7(" + ownerFaction.getTag() + ")";
         } else {
-            // Requisito 2, 4, 6: O jogador não tem facção, usa cinza
             color = DEFAULT_COLOR;
             label = "§f" + claim.getClaimName();
         }
 
-        // --- Descrição do Marcador (HTML para o pop-up no mapa) ---
         String description = "<div><strong>Dono:</strong> " + ownerName + "</div>";
         if (ownerFaction != null) {
-            description += "<div><strong>Facção:</strong> " + ownerFaction.getName() + "</div>";
+            description += "<div><strong>Faccao:</strong> " + ownerFaction.getName() + "</div>";
         }
 
-        // --- Atualiza o marcador com as novas informações ---
-        marker.setLabel(label, true); // O 'true' indica que a label pode conter HTML/códigos de cor
+        marker.setLabel(label, true);
         marker.setDescription(description);
 
         int colorInt = Integer.parseInt(color.substring(1), 16);
@@ -101,10 +98,6 @@ public class DynmapManager {
         marker.setFillStyle(FILL_OPACITY, colorInt);
     }
 
-    /**
-     * Remove um marcador de claim do mapa.
-     * @param claim O claim a ser removido.
-     */
     public void deleteClaimMarker(Claim claim) {
         if (markerSet == null || claim == null) return;
         String markerId = generateMarkerId(claim);
@@ -114,15 +107,11 @@ public class DynmapManager {
         }
     }
     
-    /**
-     * Gera um ID único para o marcador baseado no claim.
-     */
     private String generateMarkerId(Claim claim) {
-        // Usar um formato consistente garante que sempre possamos encontrar o marcador novamente
         return "claim_" + claim.getOwnerName().toLowerCase(Locale.ROOT) + "_" + claim.getClaimName();
     }
 
     public void cleanup() {
-        // No futuro, pode ser usado para limpar o markerSet se necessário
+        // Nada a fazer aqui por enquanto
     }
 }

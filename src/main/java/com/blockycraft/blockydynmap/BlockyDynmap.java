@@ -21,7 +21,7 @@ public class BlockyDynmap extends JavaPlugin {
 
     @Override
     public void onEnable() {
-        // Em vez de usar BukkitRunnable, usamos o método antigo e compatível
+        // Usa o agendador compatível com a Beta 1.7.3 para esperar as dependências.
         // Ele agenda uma tarefa que se repete e nos dá um ID para poder cancelá-la depois.
         this.checkTaskId = getServer().getScheduler().scheduleSyncRepeatingTask(this, new Runnable() {
             @Override
@@ -92,16 +92,23 @@ public class BlockyDynmap extends JavaPlugin {
         return true;
     }
 
+    /**
+     * Varre todos os claims existentes no BlockyClaim e os desenha no Dynmap.
+     * Essencial para manter o mapa atualizado após reinicializações.
+     */
     public void syncAllClaims() {
         ClaimManager claimManager = blockyClaim.getClaimManager();
         if (claimManager != null) {
             System.out.println("[BlockyDynmap] Iniciando sincronizacao completa de todos os claims existentes...");
-            claimManager.getClaimsByOwner("").forEach(claim -> dynmapManager.createOrUpdateClaimMarker(claim));
+            
+            // CORREÇÃO FINAL: Usa o método getAllClaims() para obter a lista completa de terrenos.
+            claimManager.getAllClaims().forEach(claim -> dynmapManager.createOrUpdateClaimMarker(claim));
+            
             System.out.println("[BlockyDynmap] Sincronizacao completa finalizada.");
         }
     }
 
-    // Getters
+    // Getters para que outras classes possam acessar as APIs necessárias
     public DynmapManager getDynmapManager() {
         return dynmapManager;
     }

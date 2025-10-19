@@ -2,12 +2,14 @@ package com.blockycraft.blockydynmap.listener;
 
 import com.blockycraft.blockyclaim.data.Claim;
 import com.blockycraft.blockydynmap.BlockyDynmap;
+import com.blockycraft.blockyfactions.data.Faction;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerCommandPreprocessEvent;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class CommandListener implements Listener {
@@ -20,17 +22,16 @@ public class CommandListener implements Listener {
 
     @EventHandler
     public void onPlayerCommand(PlayerCommandPreprocessEvent event) {
+        if (event.isCancelled()) {
+            return;
+        }
+
         Player player = event.getPlayer();
         String[] args = event.getMessage().toLowerCase().split(" ");
         String command = args[0].replace("/", "");
 
-        // Roda a lógica um "tick" depois do comando, para garantir que a ação do plugin original já tenha sido processada
-        Bukkit.getScheduler().scheduleSyncDelayedTask(plugin, new Runnable() {
-            @Override
-            public void run() {
-                handleCommand(command, args, player);
-            }
-        }, 1L);
+        // A lógica é executada aqui para capturar o estado da facção ANTES da mudança.
+        handleCommand(command, args, player);
     }
 
     private void handleCommand(String command, String[] args, Player player) {
@@ -38,20 +39,17 @@ public class CommandListener implements Listener {
         if (command.equals("claim")) {
             if (args.length > 1) {
                 String subCommand = args[1];
-
-                // Requisito 1: Um novo claim foi criado
-                if (subCommand.equals("confirm")) {
-                    Claim claim = plugin.getBlockyClaim().getClaimManager().getClaimAt(player.getLocation());
-                    if (claim != null && claim.getOwnerName().equalsIgnoreCase(player.getName())) {
-                        plugin.getDynmapManager().createOrUpdateClaimMarker(claim);
-                    }
-                }
-                // Requisito 4 e 5: Um claim foi comprado ou ocupado
-                else if (subCommand.equals("buy") || subCommand.equals("occupy")) {
-                     Claim claim = plugin.getBlockyClaim().getClaimManager().getClaimAt(player.getLocation());
-                    if (claim != null) {
-                        plugin.getDynmapManager().createOrUpdateClaimMarker(claim);
-                    }
+                if (subCommand.equals("confirm") || subCommand.equals("buy") || subCommand.equals("occupy")) {
+                    // Adia a verificação para garantir que o claim já foi processado pelo outro plugin
+                    Bukkit.getScheduler().scheduleSyncDelayedTask(plugin, new Runnable() {
+                        @Override
+                        public void run() {
+                            Claim claim = plugin.getBlockyClaim().getClaimManager().getClaimAt(player.getLocation());
+                            if (claim != null) {
+                                plugin.getDynmapManager().createOrUpdateClaimMarker(claim);
+                            }
+                        }
+                    }, 1L);
                 }
             }
         }
@@ -60,24 +58,54 @@ public class CommandListener implements Listener {
             if (args.length > 1) {
                 String subCommand = args[1];
 
-                // Requisito 7: Jogador entrou em uma facção
-                if (subCommand.equals("entrar")) {
-                    updateAllPlayerClaims(player);
+                if (subCommand.equals("entrar") || subCommand.equals("criar")) {
+                    Bukkit.getScheduler().scheduleSyncDelayedTask(plugin, new Runnable() {
+                        @Override
+                        public void run() {
+                            updateAllPlayerClaims(player.getName());
+                        }
+                    }, 1L);
                 }
-                // Requisito 6: Jogador saiu da facção
                 else if (subCommand.equals("sair")) {
-                    updateAllPlayerClaims(player);
+                    Faction faction = plugin.getBlockyFactions().getFactionManager().getPlayerFaction(player.getName());
+                    if (faction == null) return;
+
+                    // ***** LÓGICA DE DISSOLUÇÃO CORRIGIDA *****
+                    // A dissolução ocorre se o LÍDER sai e NÃO HÁ OFICIAIS para transferir a liderança.
+                    boolean isLeader = faction.getLeader().equalsIgnoreCase(player.getName());
+                    boolean noOfficialsToPromote = faction.getOfficials().isEmpty();
+
+                    final List<String> membersToUpdate = new ArrayList<String>();
+
+                    if (isLeader && noOfficialsToPromote) {
+                        // A facção SERÁ DISSOLVIDA. Salva todos os membros (incluindo Jogador2) para atualização.
+                        membersToUpdate.add(faction.getLeader());
+                        membersToUpdate.addAll(faction.getOfficials());
+                        membersToUpdate.addAll(faction.getMembers());
+                        if (faction.getTreasuryPlayer() != null && !faction.getTreasuryPlayer().isEmpty()) {
+                            membersToUpdate.add(faction.getTreasuryPlayer());
+                        }
+                    } else {
+                        // Cenário normal: Apenas o jogador atual está saindo, a facção continuará existindo.
+                        membersToUpdate.add(player.getName());
+                    }
+
+                    // Adia a atualização para depois que BlockyFactions processar o comando
+                    Bukkit.getScheduler().scheduleSyncDelayedTask(plugin, new Runnable() {
+                        @Override
+                        public void run() {
+                            for (String playerName : membersToUpdate) {
+                                updateAllPlayerClaims(playerName);
+                            }
+                        }
+                    }, 1L);
                 }
             }
         }
     }
-    
-    /**
-     * Atualiza todos os marcadores de um jogador específico.
-     * Útil quando ele muda de status de facção.
-     */
-    private void updateAllPlayerClaims(Player player) {
-        List<Claim> playerClaims = plugin.getBlockyClaim().getClaimManager().getClaimsByOwner(player.getName());
+
+    private void updateAllPlayerClaims(String playerName) {
+        List<Claim> playerClaims = plugin.getBlockyClaim().getClaimManager().getClaimsByOwner(playerName);
         for (Claim claim : playerClaims) {
             plugin.getDynmapManager().createOrUpdateClaimMarker(claim);
         }
