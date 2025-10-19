@@ -1,0 +1,8 @@
+name: BlockyDynmap
+main: com.blockycraft.blockydynmap.BlockyDynmap
+version: 1.0.0
+author: Bernardo Zukerman
+description: Integra BlockyClaim e BlockyFactions com o Dynmap.
+
+# softdepend indica a relação entre os plugins, o que é bom, mas a lógica de espera está no código.
+softdepend: [dynmap, BlockyClaim, BlockyFactions]
