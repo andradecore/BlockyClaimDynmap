@@ -16,25 +16,20 @@ public class BlockyDynmap extends JavaPlugin {
     private BlockyFactions blockyFactions;
     private boolean initialized = false;
 
-    // Variável para guardar o ID da nossa tarefa de verificação
     private int checkTaskId = -1;
 
     @Override
     public void onEnable() {
-        // Usa o agendador compatível com a Beta 1.7.3 para esperar as dependências.
-        // Ele agenda uma tarefa que se repete e nos dá um ID para poder cancelá-la depois.
+        // O dynmap é nojento de pesado e carrega muito depois pqp
         this.checkTaskId = getServer().getScheduler().scheduleSyncRepeatingTask(this, new Runnable() {
             @Override
             public void run() {
-                // Tenta encontrar as dependências a cada execução da tarefa
                 if (setupDependencies()) {
-                    // Se encontrou, cancela esta tarefa para que ela pare de rodar
                     getServer().getScheduler().cancelTask(checkTaskId);
-                    // E então, inicializa o plugin
                     initialize();
                 }
             }
-        }, 0L, 20L); // Tenta imediatamente (0L) e repete a cada 1 segundo (20L ticks)
+        }, 0L, 20L);
     }
 
     /**
@@ -60,10 +55,6 @@ public class BlockyDynmap extends JavaPlugin {
         System.out.println("[BlockyDynmap] Plugin desativado.");
     }
 
-    /**
-     * Verifica e obtém instâncias dos plugins dos quais o BlockyDynmap depende.
-     * @return true se TODAS as dependências estiverem ativas, false caso contrário.
-     */
     private boolean setupDependencies() {
         PluginManager pm = getServer().getPluginManager();
 
@@ -94,21 +85,19 @@ public class BlockyDynmap extends JavaPlugin {
 
     /**
      * Varre todos os claims existentes no BlockyClaim e os desenha no Dynmap.
-     * Essencial para manter o mapa atualizado após reinicializações.
+     * Essencial para manter essa bosta atualizada após reinicializações.
      */
     public void syncAllClaims() {
         ClaimManager claimManager = blockyClaim.getClaimManager();
         if (claimManager != null) {
             System.out.println("[BlockyDynmap] Iniciando sincronizacao completa de todos os claims existentes...");
             
-            // CORREÇÃO FINAL: Usa o método getAllClaims() para obter a lista completa de terrenos.
             claimManager.getAllClaims().forEach(claim -> dynmapManager.createOrUpdateClaimMarker(claim));
             
             System.out.println("[BlockyDynmap] Sincronizacao completa finalizada.");
         }
     }
 
-    // Getters para que outras classes possam acessar as APIs necessárias
     public DynmapManager getDynmapManager() {
         return dynmapManager;
     }

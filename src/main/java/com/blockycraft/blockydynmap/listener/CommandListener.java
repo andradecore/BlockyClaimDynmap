@@ -30,12 +30,12 @@ public class CommandListener implements Listener {
         String[] args = event.getMessage().toLowerCase().split(" ");
         String command = args[0].replace("/", "");
 
-        // A lógica é executada aqui para capturar o estado da facção ANTES da mudança.
+        // Captura o estado da facção ANTES da mudança
         handleCommand(command, args, player);
     }
 
     private void handleCommand(String command, String[] args, Player player) {
-        // --- Gatilhos do BlockyClaim ---
+        // Gatilhos do BlockyClaim
         if (command.equals("claim")) {
             if (args.length > 1) {
                 String subCommand = args[1];
@@ -53,7 +53,7 @@ public class CommandListener implements Listener {
                 }
             }
         }
-        // --- Gatilhos do BlockyFactions ---
+        // Gatilhos do BlockyFactions
         else if (command.equals("fac")) {
             if (args.length > 1) {
                 String subCommand = args[1];
@@ -70,7 +70,6 @@ public class CommandListener implements Listener {
                     Faction faction = plugin.getBlockyFactions().getFactionManager().getPlayerFaction(player.getName());
                     if (faction == null) return;
 
-                    // ***** LÓGICA DE DISSOLUÇÃO CORRIGIDA *****
                     // A dissolução ocorre se o LÍDER sai e NÃO HÁ OFICIAIS para transferir a liderança.
                     boolean isLeader = faction.getLeader().equalsIgnoreCase(player.getName());
                     boolean noOfficialsToPromote = faction.getOfficials().isEmpty();
@@ -78,7 +77,6 @@ public class CommandListener implements Listener {
                     final List<String> membersToUpdate = new ArrayList<String>();
 
                     if (isLeader && noOfficialsToPromote) {
-                        // A facção SERÁ DISSOLVIDA. Salva todos os membros (incluindo Jogador2) para atualização.
                         membersToUpdate.add(faction.getLeader());
                         membersToUpdate.addAll(faction.getOfficials());
                         membersToUpdate.addAll(faction.getMembers());
@@ -86,11 +84,9 @@ public class CommandListener implements Listener {
                             membersToUpdate.add(faction.getTreasuryPlayer());
                         }
                     } else {
-                        // Cenário normal: Apenas o jogador atual está saindo, a facção continuará existindo.
                         membersToUpdate.add(player.getName());
                     }
 
-                    // Adia a atualização para depois que BlockyFactions processar o comando
                     Bukkit.getScheduler().scheduleSyncDelayedTask(plugin, new Runnable() {
                         @Override
                         public void run() {

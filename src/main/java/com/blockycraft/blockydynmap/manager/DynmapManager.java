@@ -15,7 +15,7 @@ public class DynmapManager {
 
     private static final String MARKER_SET_ID = "blockyclaim.markers";
     private static final String MARKER_SET_LABEL = "Territórios (BlockyClaim)";
-    private static final String DEFAULT_COLOR = "#808080"; // Cinza
+    private static final String DEFAULT_COLOR = "#808080";
     private static final double FILL_OPACITY = 0.3;
     private static final double LINE_OPACITY = 0.8;
     private static final int LINE_WEIGHT = 3;
@@ -50,9 +50,6 @@ public class DynmapManager {
         String markerId = generateMarkerId(claim);
         String worldName = claim.getWorldName();
 
-        // A MUDANÇA CRÍTICA ESTÁ AQUI
-        // Em vez de tentar atualizar, nós SEMPRE deletamos o marcador antigo antes de criar o novo.
-        // Isso força o Dynmap a notificar a interface web da mudança, resolvendo o problema de renderização.
         AreaMarker existingMarker = markerSet.findAreaMarker(markerId);
         if (existingMarker != null) {
             existingMarker.deleteMarker();
@@ -70,7 +67,6 @@ public class DynmapManager {
             return;
         }
 
-        // --- Lógica de Cor e Label (continua a mesma) ---
         String ownerName = claim.getOwnerName();
         Faction ownerFaction = plugin.getBlockyFactions().getFactionManager().getPlayerFaction(ownerName);
 
@@ -112,6 +108,5 @@ public class DynmapManager {
     }
 
     public void cleanup() {
-        // Nada a fazer aqui por enquanto
     }
 }
