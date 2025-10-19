@@ -14,7 +14,7 @@ O plugin opera de forma 100% automática em segundo plano. Ele "escuta" as açõ
 ## Integração
 BlockyDynmap requer que os plugins `BlockyClaim`, `BlockyFactions` e `dynmap` estejam ativos no servidor para funcionar.
 
-- **Gatilhos do BlockyClaim**: Qualquer ação que resulte na criação (`/claim confirm`) ou na mudança de dono (`/claim buy`, `/claim occupy`) de um terreno aciona uma atualização imediata no Dynmap.
+- **Gatilhos do BlockyClaim**: Qualquer ação que resulte na criação (`/claim confirm`) ou na mudança de dono (`/claim adquirir`, `/claim occupy`) de um terreno aciona uma atualização imediata no Dynmap.
 - **Gatilhos do BlockyFactions**: Ações de um jogador que alterem sua afiliação, como criar uma facção (`/fac criar`), entrar nela (`/fac entrar`) ou sair (`/fac sair`), atualizam automaticamente a cor e as informações de todos os terrenos que ele possui. Quando uma facção é dissolvida, os terrenos de todos os seus ex-membros são revertidos para a cor neutra.
 
 ## Comandos e Permissões
