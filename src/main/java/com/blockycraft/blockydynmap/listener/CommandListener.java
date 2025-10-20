@@ -39,7 +39,7 @@ public class CommandListener implements Listener {
         if (command.equals("claim")) {
             if (args.length > 1) {
                 String subCommand = args[1];
-                if (subCommand.equals("confirm") || subCommand.equals("adquirir") || subCommand.equals("occupy")) {
+                if (subCommand.equals("confirm") || subCommand.equals("adquirir") || subCommand.equals("ocupar")) {
                     // Adia a verificação para garantir que o claim já foi processado pelo outro plugin
                     Bukkit.getScheduler().scheduleSyncDelayedTask(plugin, new Runnable() {
                         @Override
