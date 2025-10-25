@@ -38,7 +38,7 @@
             <groupId>com.blockycraft</groupId>
             <artifactId>BlockyClaim-2.2</artifactId>
             <version>1.0</version> <scope>system</scope>
-            <systemPath>${minecraft.server.path}/plugins/BlockyClaim-2.2.jar</systemPath>
+            <systemPath>${minecraft.server.path}/plugins/BlockyClaim.jar</systemPath>
         </dependency>
 
         <dependency>
