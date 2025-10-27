@@ -9,13 +9,15 @@ import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
 
+/**
+ * Classe principal do plugin BlockyDynmap,
+ * responsável por inicialização e integração dos managers.
+ */
 public class BlockyDynmap extends JavaPlugin {
-
     private DynmapManager dynmapManager;
     private BlockyClaim blockyClaim;
     private BlockyFactions blockyFactions;
     private boolean initialized = false;
-
     private int checkTaskId = -1;
 
     @Override
@@ -38,11 +40,13 @@ public class BlockyDynmap extends JavaPlugin {
      */
     private void initialize() {
         if (initialized) return;
-
         this.dynmapManager = new DynmapManager(this);
-        this.syncAllClaims();
-        getServer().getPluginManager().registerEvents(new CommandListener(this), this);
 
+        // Sincronização inicial de claims com Dynmap aprimorada:
+        // Após criar claims no boot, garante que claims de membros de facção tenham cor correta
+        syncAllClaims();
+
+        getServer().getPluginManager().registerEvents(new CommandListener(this), this);
         System.out.println("[BlockyDynmap] Dependencias encontradas. Plugin ativado e integrado com sucesso!");
         initialized = true;
     }
@@ -85,15 +89,15 @@ public class BlockyDynmap extends JavaPlugin {
 
     /**
      * Varre todos os claims existentes no BlockyClaim e os desenha no Dynmap.
-     * Essencial para manter essa bosta atualizada após reinicializações.
+     * Essencial para manter atualizados após reinicializações.
      */
     public void syncAllClaims() {
         ClaimManager claimManager = blockyClaim.getClaimManager();
         if (claimManager != null) {
             System.out.println("[BlockyDynmap] Iniciando sincronizacao completa de todos os claims existentes...");
-            
+
             claimManager.getAllClaims().forEach(claim -> dynmapManager.createOrUpdateClaimMarker(claim));
-            
+
             System.out.println("[BlockyDynmap] Sincronizacao completa finalizada.");
         }
     }

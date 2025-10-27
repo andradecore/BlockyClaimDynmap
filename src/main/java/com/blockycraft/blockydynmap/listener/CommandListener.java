@@ -12,8 +12,11 @@ import org.bukkit.event.player.PlayerCommandPreprocessEvent;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Listener para processamento de comandos relacionados a Claim e Factions,
+ * garantindo que a integração com o Dynmap seja sempre fiel ao estado atual.
+ */
 public class CommandListener implements Listener {
-
     private final BlockyDynmap plugin;
 
     public CommandListener(BlockyDynmap plugin) {
@@ -25,7 +28,6 @@ public class CommandListener implements Listener {
         if (event.isCancelled()) {
             return;
         }
-
         Player player = event.getPlayer();
         String[] args = event.getMessage().toLowerCase().split(" ");
         String command = args[0].replace("/", "");
@@ -41,6 +43,8 @@ public class CommandListener implements Listener {
                 String subCommand = args[1];
                 if (subCommand.equals("confirm") || subCommand.equals("adquirir") || subCommand.equals("ocupar")) {
                     // Adia a verificação para garantir que o claim já foi processado pelo outro plugin
+                    // ATUALIZAÇÃO: Realiza duas tentativas espaçadas para garantir a atualização correta no Dynmap
+                    // (1) Primeira tentativa padrão (como era antes)
                     Bukkit.getScheduler().scheduleSyncDelayedTask(plugin, new Runnable() {
                         @Override
                         public void run() {
@@ -50,6 +54,17 @@ public class CommandListener implements Listener {
                             }
                         }
                     }, 1L);
+
+                    // (2) Segunda tentativa, alguns ticks depois (garante que a facção do jogador foi processada)
+                    Bukkit.getScheduler().scheduleSyncDelayedTask(plugin, new Runnable() {
+                        @Override
+                        public void run() {
+                            List<Claim> claims = plugin.getBlockyClaim().getClaimManager().getClaimsByOwner(player.getName());
+                            for (Claim playerClaim : claims) {
+                                plugin.getDynmapManager().createOrUpdateClaimMarker(playerClaim);
+                            }
+                        }
+                    }, 10L);
                 }
             }
         }
@@ -57,7 +72,6 @@ public class CommandListener implements Listener {
         else if (command.equals("fac")) {
             if (args.length > 1) {
                 String subCommand = args[1];
-
                 if (subCommand.equals("entrar") || subCommand.equals("criar")) {
                     Bukkit.getScheduler().scheduleSyncDelayedTask(plugin, new Runnable() {
                         @Override
@@ -65,17 +79,13 @@ public class CommandListener implements Listener {
                             updateAllPlayerClaims(player.getName());
                         }
                     }, 1L);
-                }
-                else if (subCommand.equals("sair")) {
+                } else if (subCommand.equals("sair")) {
                     Faction faction = plugin.getBlockyFactions().getFactionManager().getPlayerFaction(player.getName());
                     if (faction == null) return;
-
                     // A dissolução ocorre se o LÍDER sai e NÃO HÁ OFICIAIS para transferir a liderança.
                     boolean isLeader = faction.getLeader().equalsIgnoreCase(player.getName());
                     boolean noOfficialsToPromote = faction.getOfficials().isEmpty();
-
-                    final List<String> membersToUpdate = new ArrayList<String>();
-
+                    final List<String> membersToUpdate = new ArrayList<>();
                     if (isLeader && noOfficialsToPromote) {
                         membersToUpdate.add(faction.getLeader());
                         membersToUpdate.addAll(faction.getOfficials());
@@ -86,7 +96,6 @@ public class CommandListener implements Listener {
                     } else {
                         membersToUpdate.add(player.getName());
                     }
-
                     Bukkit.getScheduler().scheduleSyncDelayedTask(plugin, new Runnable() {
                         @Override
                         public void run() {
